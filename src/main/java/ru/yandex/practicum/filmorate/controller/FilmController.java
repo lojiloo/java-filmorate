@@ -19,7 +19,7 @@ import java.util.Map;
 public class FilmController {
     private static final Logger logger = LoggerFactory.getLogger(FilmController.class);
     private static final LocalDate BDAY_OF_CINEMA = LocalDate.of(1895, Month.DECEMBER, 28);
-    private Map<Long, Film> films = new HashMap<>();
+    private final Map<Long, Film> films = new HashMap<>();
 
     @PostMapping
     public Film addNewFilm(@Valid @RequestBody final Film film) {

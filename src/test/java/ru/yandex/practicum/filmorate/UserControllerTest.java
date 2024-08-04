@@ -121,7 +121,7 @@ public class UserControllerTest {
     }
 
     @Test
-    public void UpdateUserTest() {
+    public void updateUserTest() {
         User user = User.builder()
                 .email("mail@mail.com")
                 .login("lojiloo")
