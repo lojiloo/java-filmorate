@@ -1,7 +1,12 @@
 package ru.yandex.practicum.filmorate;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.exceptions.InvalidRequestException;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
@@ -9,13 +14,22 @@ import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
 public class FilmControllerTest {
     FilmController controller = new FilmController();
+    private Validator validator;
+
+    @BeforeEach
+    public void setUp() {
+        ValidatorFactory factory = Validation.byDefaultProvider()
+                .configure()
+                .messageInterpolator(new ParameterMessageInterpolator())
+                .buildValidatorFactory();
+        validator = factory.getValidator();
+    }
 
     @Test
     public void addNewFilmTest() {
@@ -52,9 +66,8 @@ public class FilmControllerTest {
                 .releaseDate(LocalDate.of(2000, Month.AUGUST, 1))
                 .duration(50)
                 .build();
-
-        assertThrows(InvalidRequestException.class, () -> controller.addNewFilm(film),
-                "Попытка передать пустое имя не вызвала исключения");
+        Set<ConstraintViolation<Film>> violations = validator.validate(film);
+        assertFalse(violations.isEmpty(), "Фильм без названия прошёл валидацию");
     }
 
     @Test
@@ -65,9 +78,9 @@ public class FilmControllerTest {
                 .releaseDate(LocalDate.of(2000, Month.AUGUST, 1))
                 .duration(50)
                 .build();
-
-        assertThrows(InvalidRequestException.class, () -> controller.addNewFilm(film),
-                "Попытка передать описание, превышающее допустимую длину, не вызвала исключения");
+        Set<ConstraintViolation<Film>> violations = validator.validate(film);
+        assertFalse(violations.isEmpty(),
+                "Описание, превышающее 200 символов, прошло валидацию");
     }
 
     @Test
@@ -78,9 +91,9 @@ public class FilmControllerTest {
                 .releaseDate(LocalDate.of(1500, Month.AUGUST, 1))
                 .duration(50)
                 .build();
-
-        assertThrows(InvalidRequestException.class, () -> controller.addNewFilm(film),
-                "Попытка перердать фильм, снятый до появления кинематографа, не вызвала исключения");
+        Set<ConstraintViolation<Film>> violations = validator.validate(film);
+        assertFalse(violations.isEmpty(),
+                "Фильм с датой релиза ранее 1985-12-28 прошёл валидацию");
     }
 
     @Test
@@ -94,7 +107,7 @@ public class FilmControllerTest {
         controller.addNewFilm(film);
 
         Film film2 = film.toBuilder()
-                .id(1L)
+                .id(film.getId())
                 .description("super")
                 .build();
         controller.updateFilm(film2);
@@ -116,7 +129,7 @@ public class FilmControllerTest {
         controller.addNewFilm(film);
 
         Film film2 = film.toBuilder()
-                .id(2L)
+                .id(film.getId() + 1)
                 .build();
 
         assertThrows(NotFoundException.class, () -> controller.updateFilm(film2),

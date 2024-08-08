@@ -1,7 +1,12 @@
 package ru.yandex.practicum.filmorate;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import ru.yandex.practicum.filmorate.controller.UserController;
 import ru.yandex.practicum.filmorate.exceptions.InvalidRequestException;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
@@ -9,13 +14,22 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
 public class UserControllerTest {
     UserController controller = new UserController();
+    private Validator validator;
+
+    @BeforeEach
+    public void setUp() {
+        ValidatorFactory factory = Validation.byDefaultProvider()
+                .configure()
+                .messageInterpolator(new ParameterMessageInterpolator())
+                .buildValidatorFactory();
+        validator = factory.getValidator();
+    }
 
     @Test
     public void addNewUserTest() {
@@ -52,9 +66,9 @@ public class UserControllerTest {
                 .name("io ammit")
                 .birthday(LocalDate.of(1900, Month.AUGUST, 4))
                 .build();
-
-        assertThrows(InvalidRequestException.class, () -> controller.createNewUser(user),
-                "Попытка передать пользователя без email не вызвала исключения");
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertFalse(violations.isEmpty(),
+                "Пользователь без email прошёл валидацию");
     }
 
     @Test
@@ -65,9 +79,9 @@ public class UserControllerTest {
                 .name("io ammit")
                 .birthday(LocalDate.of(1900, Month.AUGUST, 4))
                 .build();
-
-        assertThrows(InvalidRequestException.class, () -> controller.createNewUser(user),
-                "Попытка передать пользователя с некорректным email не вызвала исключения");
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertFalse(violations.isEmpty(),
+                "Пользователь с некорректным email прошёл валидацию");
     }
 
     @Test
@@ -77,9 +91,9 @@ public class UserControllerTest {
                 .name("io ammit")
                 .birthday(LocalDate.of(1900, Month.AUGUST, 4))
                 .build();
-
-        assertThrows(InvalidRequestException.class, () -> controller.createNewUser(user),
-                "Попытка передать пользователя без логина не вызвала исключения");
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertFalse(violations.isEmpty(),
+                "Пользователь без логина прошёл валидацию");
     }
 
     @Test
@@ -90,9 +104,9 @@ public class UserControllerTest {
                 .name("io ammit")
                 .birthday(LocalDate.of(1900, Month.AUGUST, 4))
                 .build();
-
-        assertThrows(InvalidRequestException.class, () -> controller.createNewUser(user),
-                "Попытка передать пользователя с некорректным логином не вызвала исключения");
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertFalse(violations.isEmpty(),
+                "Пользователь с логином, содержащим пробел(ы), прошёл валидацию");
     }
 
     @Test
@@ -115,9 +129,9 @@ public class UserControllerTest {
                 .login("lojiloo")
                 .birthday(LocalDate.of(2900, Month.AUGUST, 4))
                 .build();
-
-        assertThrows(InvalidRequestException.class, () -> controller.createNewUser(user),
-                "Попытка передать пользователя с датой рождения, старше текущего момента, не вызвала исключения");
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertFalse(violations.isEmpty(),
+                "День рождения из будущего прошёл валидацию");
     }
 
     @Test
