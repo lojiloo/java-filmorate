@@ -11,6 +11,8 @@ import ru.yandex.practicum.filmorate.controller.UserController;
 import ru.yandex.practicum.filmorate.exceptions.InvalidRequestException;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -19,7 +21,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class UserControllerTest {
-    UserController controller = new UserController();
+    UserService userService = new UserService(new InMemoryUserStorage());
     private Validator validator;
 
     @BeforeEach
@@ -39,9 +41,9 @@ public class UserControllerTest {
                 .name("io ammit")
                 .birthday(LocalDate.of(1900, Month.AUGUST, 4))
                 .build();
-        controller.createNewUser(user);
+        userService.createNewUser(user);
 
-        assertEquals(1, controller.getUsers().size(),
+        assertEquals(1, userService.getUsers().size(),
                 "Новый пользователь не был добавлен; список пользователей пуст");
     }
 
@@ -55,7 +57,7 @@ public class UserControllerTest {
                 .birthday(LocalDate.of(1900, Month.AUGUST, 4))
                 .build();
 
-        assertThrows(InvalidRequestException.class, () -> controller.createNewUser(user),
+        assertThrows(InvalidRequestException.class, () -> userService.createNewUser(user),
                 "id был введён вручную");
     }
 
@@ -116,9 +118,9 @@ public class UserControllerTest {
                 .login("lojiloo")
                 .birthday(LocalDate.of(1900, Month.AUGUST, 4))
                 .build();
-        controller.createNewUser(user);
+        userService.createNewUser(user);
 
-        assertEquals("lojiloo", controller.getUsers().getFirst().getName(),
+        assertEquals("lojiloo", userService.getUsers().getFirst().getName(),
                 "Для пользователя без имени в переменную имени не был записан логин");
     }
 
@@ -142,17 +144,17 @@ public class UserControllerTest {
                 .name("io ammit")
                 .birthday(LocalDate.of(1900, Month.AUGUST, 4))
                 .build();
-        controller.createNewUser(user);
+        userService.createNewUser(user);
 
         User user2 = user.toBuilder()
                 .id(1L)
                 .login("oolijol")
                 .build();
-        controller.updateUser(user2);
+        userService.updateUser(user2);
 
-        assertEquals(1, controller.getUsers().size(),
+        assertEquals(1, userService.getUsers().size(),
                 "При обновлении пользователя список увеличился, хотя ожидалось сохранение его размера");
-        assertEquals("oolijol", controller.getUsers().getFirst().getLogin(),
+        assertEquals("oolijol", userService.getUsers().getFirst().getLogin(),
                 "При обновлении пользователя новая версия не сохранилась");
     }
 
@@ -164,14 +166,14 @@ public class UserControllerTest {
                 .name("io ammit")
                 .birthday(LocalDate.of(1900, Month.AUGUST, 4))
                 .build();
-        controller.createNewUser(user);
+        userService.createNewUser(user);
 
         User user2 = user.toBuilder()
                 .id(10L)
                 .login("oolijol")
                 .build();
 
-        assertThrows(NotFoundException.class, () -> controller.updateUser(user2),
+        assertThrows(NotFoundException.class, () -> userService.updateUser(user2),
                 "Попытка передать несуществующего пользователя не вызвала исключения");
     }
 }
