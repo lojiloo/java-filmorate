@@ -45,8 +45,7 @@ public class FilmService {
         }
 
         Film film = filmStorage.getFilms(id).getFirst();
-        film.getUsersLiked().add
-                (userStorage.getUsers(userId).getFirst());
+        film.getUsersLiked().add(userStorage.getUsers(userId).getFirst());
 
         log.info("Пользователь {} поставил лайк фильму {}",
                 userStorage.getUsers(userId).getFirst().getLogin(),
@@ -65,8 +64,7 @@ public class FilmService {
         }
 
         Film film = filmStorage.getFilms(id).getFirst();
-        film.getUsersLiked().remove
-                (userStorage.getUsers(userId).getFirst());
+        film.getUsersLiked().remove(userStorage.getUsers(userId).getFirst());
         log.info("Пользователь {} успешно убрал лайк с фильма {}",
                 userStorage.getUsers(userId).getFirst().getLogin(),
                 film.getName());
