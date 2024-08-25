@@ -12,7 +12,7 @@ public interface UserStorage {
 
     List<User> getUsers();
 
-    List<User> getUsers(long id);
+    User getUser(long id);
 
     boolean contains(long id);
 

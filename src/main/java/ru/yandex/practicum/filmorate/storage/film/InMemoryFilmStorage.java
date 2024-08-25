@@ -6,8 +6,8 @@ import ru.yandex.practicum.filmorate.exceptions.InvalidRequestException;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +25,6 @@ public class InMemoryFilmStorage implements FilmStorage {
         }
 
         film.setId(++id);
-        film.setUsersLiked(new HashSet<>());
         films.put(film.getId(), film);
         log.info("Фильм {} успешно добавлен", film.getName());
         return film;
@@ -48,12 +47,20 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getFilms(long id) {
+    public Film getFilm(long id) {
         if (films.containsKey(id)) {
-            return List.of(films.get(id));
+            return films.get(id);
         }
         log.warn("Фильм с id {} не найден", id);
         throw new NotFoundException("Фильм с данным id не найден");
+    }
+
+    @Override
+    public List<Film> topByLikes(int count) {
+        return getFilms().stream()
+                .sorted(Comparator.comparing(film -> film.getUsersLiked().size(), Comparator.reverseOrder()))
+                .limit(count)
+                .toList();
     }
 
     public boolean contains(long filmId) {

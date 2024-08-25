@@ -29,8 +29,8 @@ public class UserService {
         return userStorage.getUsers();
     }
 
-    public List<User> getUsers(long id) {
-        return userStorage.getUsers(id);
+    public User getUser(long id) {
+        return userStorage.getUser(id);
     }
 
     public User addNewFriend(long id, long friendId) {
@@ -43,8 +43,8 @@ public class UserService {
             throw new NotFoundException("Недействительный id");
         }
 
-        User user = userStorage.getUsers(id).getFirst();
-        User friend = userStorage.getUsers(friendId).getFirst();
+        User user = userStorage.getUser(id);
+        User friend = userStorage.getUser(friendId);
 
         user.getFriends().add(friendId);
         friend.getFriends().add(id);
@@ -63,8 +63,8 @@ public class UserService {
             throw new NotFoundException("Недействительный id");
         }
 
-        User user = userStorage.getUsers(id).getFirst();
-        User friend = userStorage.getUsers(friendId).getFirst();
+        User user = userStorage.getUser(id);
+        User friend = userStorage.getUser(friendId);
 
         user.getFriends().remove(friendId);
         friend.getFriends().remove(id);
@@ -81,9 +81,9 @@ public class UserService {
 
         List<User> friends = new ArrayList<>();
 
-        User user = userStorage.getUsers(id).getFirst();
+        User user = userStorage.getUser(id);
         for (long friendId : user.getFriends()) {
-            friends.add(userStorage.getUsers(friendId).getFirst());
+            friends.add(userStorage.getUser(friendId));
         }
         return friends;
     }
@@ -98,13 +98,13 @@ public class UserService {
             throw new NotFoundException("Недействительный id");
         }
 
-        Set<Long> u1FriendsId = userStorage.getUsers(id).getFirst().getFriends();
-        Set<Long> u2FriendsId = userStorage.getUsers(otherId).getFirst().getFriends();
+        Set<Long> u1FriendsId = userStorage.getUser(id).getFriends();
+        Set<Long> u2FriendsId = userStorage.getUser(otherId).getFriends();
         u1FriendsId.retainAll(u2FriendsId);
 
         List<User> intersection = new ArrayList<>();
         for (long friendId : u1FriendsId) {
-            intersection.add(userStorage.getUsers(friendId).getFirst());
+            intersection.add(userStorage.getUser(friendId));
         }
 
         log.trace("Пересечения: {}", intersection);

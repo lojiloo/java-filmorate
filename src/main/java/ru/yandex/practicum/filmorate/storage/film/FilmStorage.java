@@ -12,7 +12,9 @@ public interface FilmStorage {
 
     List<Film> getFilms();
 
-    List<Film> getFilms(long id);
+    Film getFilm(long id);
+
+    List<Film> topByLikes(int count);
 
     boolean contains(long id);
 

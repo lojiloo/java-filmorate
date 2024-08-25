@@ -19,7 +19,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class UserControllerTest {
+public class UserServiceTest {
     UserService userService = new UserService(new InMemoryUserStorage());
     private Validator validator;
 

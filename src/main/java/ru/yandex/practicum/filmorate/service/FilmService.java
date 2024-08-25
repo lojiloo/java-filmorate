@@ -8,7 +8,6 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -30,8 +29,8 @@ public class FilmService {
         return filmStorage.getFilms();
     }
 
-    public List<Film> getFilms(long id) {
-        return filmStorage.getFilms(id);
+    public Film getFilm(long id) {
+        return filmStorage.getFilm(id);
     }
 
     public Film like(long id, long userId) {
@@ -44,11 +43,11 @@ public class FilmService {
             throw new NotFoundException("Недействительный id");
         }
 
-        Film film = filmStorage.getFilms(id).getFirst();
-        film.getUsersLiked().add(userStorage.getUsers(userId).getFirst());
+        Film film = filmStorage.getFilm(id);
+        film.getUsersLiked().add(userStorage.getUser(userId));
 
         log.info("Пользователь {} поставил лайк фильму {}",
-                userStorage.getUsers(userId).getFirst().getLogin(),
+                userStorage.getUser(userId).getLogin(),
                 film.getName());
         return film;
     }
@@ -63,18 +62,15 @@ public class FilmService {
             throw new NotFoundException("Недействительный id");
         }
 
-        Film film = filmStorage.getFilms(id).getFirst();
-        film.getUsersLiked().remove(userStorage.getUsers(userId).getFirst());
+        Film film = filmStorage.getFilm(id);
+        film.getUsersLiked().remove(userStorage.getUser(userId));
         log.info("Пользователь {} успешно убрал лайк с фильма {}",
-                userStorage.getUsers(userId).getFirst().getLogin(),
+                userStorage.getUser(userId).getLogin(),
                 film.getName());
         return film;
     }
 
     public List<Film> topByLikes(int count) {
-        return filmStorage.getFilms().stream()
-                .sorted(Comparator.comparing(film -> film.getUsersLiked().size(), Comparator.reverseOrder()))
-                .limit(count)
-                .toList();
+        return filmStorage.topByLikes(count);
     }
 }
