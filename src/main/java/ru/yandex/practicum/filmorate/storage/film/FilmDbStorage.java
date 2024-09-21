@@ -210,8 +210,7 @@ public class FilmDbStorage implements FilmStorage {
             List<Genre> genres = jdbcTemplate.query(queryGenres, (rs, rn) -> Genre.builder()
                             .id(rs.getInt("genre_id"))
                             .name(rs.getString("genre_name"))
-                            .build()
-                    , filmId);
+                            .build(), filmId);
 
             film.getGenres().addAll(genres);
         }
@@ -221,8 +220,7 @@ public class FilmDbStorage implements FilmStorage {
             Mpa mpa = jdbcTemplate.queryForObject(queryMpa, (rs, rn) -> Mpa.builder()
                             .id(rs.getInt("mpa_id"))
                             .name(rs.getString("mpa_name"))
-                            .build()
-                    , filmId);
+                            .build(), filmId);
 
             film.setMpa(mpa);
         }
