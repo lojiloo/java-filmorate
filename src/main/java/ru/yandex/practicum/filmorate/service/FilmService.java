@@ -2,7 +2,10 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exceptions.InvalidRequestException;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
@@ -11,17 +14,29 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 @Slf4j
 public class FilmService {
+    @Qualifier("DbFilms")
     private final FilmStorage filmStorage;
+    @Qualifier("DbUsers")
     private final UserStorage userStorage;
 
     public Film addNewFilm(Film film) {
+        if (film.getId() != null) {
+            log.warn("У фильма, не добавленного в сервис, обнаружен id: {}", film.getName());
+            throw new InvalidRequestException("id не может быть введен вручную");
+        }
+
         return filmStorage.addNewFilm(film);
     }
 
     public Film updateFilm(Film film) {
+        if (film.getId() == null) {
+            throw new InvalidRequestException("Фильм не найден, поскольку не указан id");
+        } else if (!filmStorage.contains(film.getId())) {
+            throw new NotFoundException("Фильм с таким id не существует");
+        }
         return filmStorage.updateFilm(film);
     }
 
@@ -30,6 +45,9 @@ public class FilmService {
     }
 
     public Film getFilm(long id) {
+        if (!filmStorage.contains(id)) {
+            throw new NotFoundException("Фильм с таким id не найден");
+        }
         return filmStorage.getFilm(id);
     }
 
@@ -43,13 +61,7 @@ public class FilmService {
             throw new NotFoundException("Недействительный id");
         }
 
-        Film film = filmStorage.getFilm(id);
-        film.getUsersLiked().add(userStorage.getUser(userId));
-
-        log.info("Пользователь {} поставил лайк фильму {}",
-                userStorage.getUser(userId).getLogin(),
-                film.getName());
-        return film;
+        return filmStorage.like(id, userId);
     }
 
     public Film dislike(long id, long userId) {
@@ -62,12 +74,7 @@ public class FilmService {
             throw new NotFoundException("Недействительный id");
         }
 
-        Film film = filmStorage.getFilm(id);
-        film.getUsersLiked().remove(userStorage.getUser(userId));
-        log.info("Пользователь {} успешно убрал лайк с фильма {}",
-                userStorage.getUser(userId).getLogin(),
-                film.getName());
-        return film;
+        return filmStorage.dislike(id, userId);
     }
 
     public List<Film> topByLikes(int count) {

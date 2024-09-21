@@ -14,6 +14,14 @@ public interface UserStorage {
 
     User getUser(long id);
 
+    User addNewFriend(long id, long friendId);
+
+    List<User> getUserFriends(long id);
+
+    List<User> getCommonFriends(long id, long otherId);
+
+    User deleteFromFriends(long id, long friendId);
+
     boolean contains(long id);
 
 }

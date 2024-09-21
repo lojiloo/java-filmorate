@@ -2,15 +2,12 @@ package ru.yandex.practicum.filmorate.storage.user;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exceptions.InvalidRequestException;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-@Component
+@Component("InMemoryUsers")
 @Slf4j
 public class InMemoryUserStorage implements UserStorage {
     private final Map<Long, User> users = new HashMap<>();
@@ -18,10 +15,6 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User createNewUser(User user) {
-        if (user.getId() != null) {
-            log.warn("Обнаружен id у незарегистрированного пользователя: {}", user.getEmail());
-            throw new InvalidRequestException("id не может быть введен вручную");
-        }
         checkName(user);
         isEmailTaken(user);
 
@@ -55,6 +48,56 @@ public class InMemoryUserStorage implements UserStorage {
         }
         log.warn("Пользователя с данным id не существует");
         throw new NotFoundException("Недействительный id");
+    }
+
+    @Override
+    public User addNewFriend(long id, long friendId) {
+        User user = getUser(id);
+        User friend = getUser(friendId);
+
+        user.getFriends().add(friendId);
+        friend.getFriends().add(id);
+
+        log.info("Пользователь {} успешно добавил(а) в друзья пользователя {}", user.getLogin(), friend.getLogin());
+        return user;
+    }
+
+    @Override
+    public List<User> getUserFriends(long id) {
+        List<User> friends = new ArrayList<>();
+
+        User user = getUser(id);
+        for (long friendId : user.getFriends()) {
+            friends.add(getUser(friendId));
+        }
+        return friends;
+    }
+
+    @Override
+    public List<User> getCommonFriends(long id, long otherId) {
+        Set<Long> u1FriendsId = getUser(id).getFriends();
+        Set<Long> u2FriendsId = getUser(otherId).getFriends();
+        u1FriendsId.retainAll(u2FriendsId);
+
+        List<User> intersection = new ArrayList<>();
+        for (long friendId : u1FriendsId) {
+            intersection.add(getUser(friendId));
+        }
+
+        log.trace("Пересечения: {}", intersection);
+        return intersection;
+    }
+
+    @Override
+    public User deleteFromFriends(long id, long friendId) {
+        User user = getUser(id);
+        User friend = getUser(friendId);
+
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(id);
+
+        log.info("Пользователь {} успешно удалил(а) из друзей пользователя {}", user.getLogin(), friend.getLogin());
+        return user;
     }
 
     public boolean contains(long id) {
