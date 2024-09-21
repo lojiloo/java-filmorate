@@ -5,10 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Builder(toBuilder = true)
 public class User {
+    private final Set<Long> friends = new HashSet<>();
     private Long id;
     @NotEmpty
     @Email
