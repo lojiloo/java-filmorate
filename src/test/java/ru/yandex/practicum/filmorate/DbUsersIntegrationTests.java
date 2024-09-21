@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.jdbc.Sql;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
@@ -20,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @JdbcTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@Sql({"/test-data.sql"})
 public class DbUsersIntegrationTests {
     private final JdbcTemplate jdbcTemplate;
     private UserDbStorage userStorage;
@@ -28,32 +26,46 @@ public class DbUsersIntegrationTests {
     @BeforeEach
     public void setUp() {
         this.userStorage = new UserDbStorage(jdbcTemplate);
-    }
-
-    @Test
-    public void testCreateUser() {
-        User user = User.builder()
+        User user1 = User.builder()
                 .login("jiloo")
                 .name("puk")
                 .email("hello@world.com")
                 .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
                 .build();
+        userStorage.createNewUser(user1);
+
+        User user2 = User.builder()
+                .login("ljiloo")
+                .name("pus")
+                .email("he@wo.com")
+                .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
+                .build();
+        userStorage.createNewUser(user2);
+    }
+
+    @Test
+    public void testCreateUser() {
+        User user = User.builder()
+                .login("jijiloo")
+                .name("hehe")
+                .email("hehe@wow.com")
+                .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
+                .build();
         userStorage.createNewUser(user);
-        assertEquals(userStorage.getUser(6), user,
+        assertEquals(userStorage.getUser(3), user,
                 "Пользователь не был добавлен в БД");
     }
 
     @Test
     public void testGetUserById() {
-        User user = userStorage.getUser(1);
-        assertEquals("iio", user.getName(),
+        assertEquals("puk", userStorage.getUser(1).getName(),
                 "Метод вернул имя пользователя, не соответствующее пользователю, переданному по id");
     }
 
     @Test
     public void testGetUsers() {
         List<User> users = userStorage.getUsers();
-        assertEquals(5, users.size(),
+        assertEquals(2, users.size(),
                 "Размер таблицы в базе данных не соответствует реальному числу пользователей");
     }
 
@@ -87,6 +99,13 @@ public class DbUsersIntegrationTests {
 
     @Test
     public void getUserFriend() {
+        User user = User.builder()
+                .login("jijiloo")
+                .name("hehe")
+                .email("hehe@wow.com")
+                .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
+                .build();
+        userStorage.createNewUser(user);
         userStorage.addNewFriend(1, 2);
         userStorage.addNewFriend(2, 1);
         userStorage.addNewFriend(1, 3);
@@ -98,6 +117,13 @@ public class DbUsersIntegrationTests {
 
     @Test
     public void getCommonFriend() {
+        User user = User.builder()
+                .login("jijiloo")
+                .name("hehe")
+                .email("hehe@wow.com")
+                .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
+                .build();
+        userStorage.createNewUser(user);
         userStorage.addNewFriend(1, 2);
         userStorage.addNewFriend(2, 1);
         userStorage.addNewFriend(3, 2);
