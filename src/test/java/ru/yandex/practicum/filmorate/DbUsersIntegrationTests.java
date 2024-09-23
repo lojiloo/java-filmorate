@@ -8,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
 import java.time.LocalDate;
@@ -21,18 +22,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class DbUsersIntegrationTests {
     private final JdbcTemplate jdbcTemplate;
-    private UserDbStorage userStorage;
+    private UserService userService;
 
     @BeforeEach
     public void setUp() {
-        this.userStorage = new UserDbStorage(jdbcTemplate);
+        this.userService = new UserService(new UserDbStorage(jdbcTemplate));
         User user1 = User.builder()
                 .login("jiloo")
                 .name("puk")
                 .email("hello@world.com")
                 .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
                 .build();
-        userStorage.createNewUser(user1);
+        userService.createNewUser(user1);
 
         User user2 = User.builder()
                 .login("ljiloo")
@@ -40,7 +41,7 @@ public class DbUsersIntegrationTests {
                 .email("he@wo.com")
                 .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
                 .build();
-        userStorage.createNewUser(user2);
+        userService.createNewUser(user2);
     }
 
     @Test
@@ -51,36 +52,36 @@ public class DbUsersIntegrationTests {
                 .email("hehe@wow.com")
                 .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
                 .build();
-        userStorage.createNewUser(user);
-        assertEquals(userStorage.getUser(3), user,
+        userService.createNewUser(user);
+        assertEquals(userService.getUser(3), user,
                 "Пользователь не был добавлен в БД");
     }
 
     @Test
     public void testGetUserById() {
-        assertEquals("puk", userStorage.getUser(1).getName(),
+        assertEquals("puk", userService.getUser(1).getName(),
                 "Метод вернул имя пользователя, не соответствующее пользователю, переданному по id");
     }
 
     @Test
     public void testGetUsers() {
-        List<User> users = userStorage.getUsers();
+        List<User> users = userService.getUsers();
         assertEquals(2, users.size(),
                 "Размер таблицы в базе данных не соответствует реальному числу пользователей");
     }
 
     @Test
     public void testUpdateUser() {
-        User user = userStorage.getUser(1);
+        User user = userService.getUser(1);
         user.setLogin("TEST");
-        userStorage.updateUser(user);
-        assertEquals("TEST", userStorage.getUser(1).getLogin(),
+        userService.updateUser(user);
+        assertEquals("TEST", userService.getUser(1).getLogin(),
                 "Логин пользователя в базе данных не был изменён или изменён неадекватно запросу");
     }
 
     @Test
     public void testFollowUser() {
-        userStorage.addNewFriend(1, 2);
+        userService.addNewFriend(1, 2);
 
         String query = "SELECT followed_user_id FROM friends WHERE following_user_id = ? ;";
         assertEquals(2, jdbcTemplate.queryForObject(query, Long.class, 1),
@@ -89,8 +90,8 @@ public class DbUsersIntegrationTests {
 
     @Test
     public void testAddFriend() {
-        userStorage.addNewFriend(1, 2);
-        userStorage.addNewFriend(2, 1);
+        userService.addNewFriend(1, 2);
+        userService.addNewFriend(2, 1);
 
         String query = "SELECT COUNT(*) FROM friends WHERE followed_user_id IN (?, ?) AND following_user_id IN (?, ?) ;";
         assertEquals(2, jdbcTemplate.queryForObject(query, Integer.class, 2, 1, 2, 1),
@@ -105,13 +106,13 @@ public class DbUsersIntegrationTests {
                 .email("hehe@wow.com")
                 .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
                 .build();
-        userStorage.createNewUser(user);
-        userStorage.addNewFriend(1, 2);
-        userStorage.addNewFriend(2, 1);
-        userStorage.addNewFriend(1, 3);
-        userStorage.addNewFriend(3, 1);
+        userService.createNewUser(user);
+        userService.addNewFriend(1, 2);
+        userService.addNewFriend(2, 1);
+        userService.addNewFriend(1, 3);
+        userService.addNewFriend(3, 1);
 
-        assertEquals(2, userStorage.getUserFriends(1).size(),
+        assertEquals(2, userService.getUserFriends(1).size(),
                 "В список друзей попали не все добавленные и принявшие заявку пользователи");
     }
 
@@ -123,13 +124,13 @@ public class DbUsersIntegrationTests {
                 .email("hehe@wow.com")
                 .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
                 .build();
-        userStorage.createNewUser(user);
-        userStorage.addNewFriend(1, 2);
-        userStorage.addNewFriend(2, 1);
-        userStorage.addNewFriend(3, 2);
-        userStorage.addNewFriend(2, 3);
+        userService.createNewUser(user);
+        userService.addNewFriend(1, 2);
+        userService.addNewFriend(2, 1);
+        userService.addNewFriend(3, 2);
+        userService.addNewFriend(2, 3);
 
-        List<User> commonFriends = userStorage.getCommonFriends(1, 3);
+        List<User> commonFriends = userService.getCommonFriends(1, 3);
         assertEquals(1, commonFriends.size(),
                 "В списке общих друзей более одного пользователя");
 
@@ -140,13 +141,13 @@ public class DbUsersIntegrationTests {
 
     @Test
     public void deleteFriend() {
-        userStorage.addNewFriend(1, 2);
-        userStorage.addNewFriend(2, 1);
-        assertEquals(1, userStorage.getUserFriends(1).size(),
+        userService.addNewFriend(1, 2);
+        userService.addNewFriend(2, 1);
+        assertEquals(1, userService.getUserFriends(1).size(),
                 "В списке друзей более одного пользователя (был добавлен один)");
 
-        userStorage.deleteFromFriends(1, 2);
-        assertEquals(0, userStorage.getUserFriends(1).size(),
+        userService.deleteFromFriends(1, 2);
+        assertEquals(0, userService.getUserFriends(1).size(),
                 "Список друзей не пуст (были удалены все друзья)");
     }
 }

@@ -14,23 +14,17 @@ public class InMemoryUserStorage implements UserStorage {
     private long id = 0;
 
     @Override
-    public User createNewUser(User user) {
-        checkName(user);
-        isEmailTaken(user);
-
-        user.setId(++id);
+    public void createNewUser(User user) {
         users.put(user.getId(), user);
         log.info("Пользователь с email {} успешно добавлен", user.getEmail());
-        return user;
     }
 
     @Override
-    public User updateUser(User user) {
+    public void updateUser(User user) {
         if (users.containsKey(user.getId())) {
             checkName(user);
             users.put(user.getId(), user);
             log.info("Пользователь с id {} успешно обновлён", user.getId());
-            return user;
         }
         log.warn("Пользователя с id {} не существует", user.getId());
         throw new NotFoundException("Пользователь с данным id не найден");
@@ -51,7 +45,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public User addNewFriend(long id, long friendId) {
+    public void addNewFriend(long id, long friendId) {
         User user = getUser(id);
         User friend = getUser(friendId);
 
@@ -59,7 +53,6 @@ public class InMemoryUserStorage implements UserStorage {
         friend.getFriends().add(id);
 
         log.info("Пользователь {} успешно добавил(а) в друзья пользователя {}", user.getLogin(), friend.getLogin());
-        return user;
     }
 
     @Override
@@ -71,6 +64,11 @@ public class InMemoryUserStorage implements UserStorage {
             friends.add(getUser(friendId));
         }
         return friends;
+    }
+
+    @Override
+    public List<Long> getUserFriendsIds(long id) {
+        return new ArrayList<>(getUser(id).getFriends());
     }
 
     @Override
@@ -89,7 +87,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public User deleteFromFriends(long id, long friendId) {
+    public void deleteFromFriends(long id, long friendId) {
         User user = getUser(id);
         User friend = getUser(friendId);
 
@@ -97,11 +95,20 @@ public class InMemoryUserStorage implements UserStorage {
         friend.getFriends().remove(id);
 
         log.info("Пользователь {} успешно удалил(а) из друзей пользователя {}", user.getLogin(), friend.getLogin());
-        return user;
+    }
+
+    @Override
+    public boolean friendIsAdded(long id, long friendId) {
+        return users.get(id).getFriends().contains(friendId);
     }
 
     public boolean contains(long id) {
         return users.containsKey(id);
+    }
+
+    @Override
+    public long getNextId() {
+        return ++id;
     }
 
     private void checkName(User user) {
@@ -110,14 +117,14 @@ public class InMemoryUserStorage implements UserStorage {
         }
     }
 
-    private void isEmailTaken(User user) {
+    public boolean isEmailTaken(User user) {
         String email = user.getEmail();
         for (User u : users.values()) {
             if (email.equals(u.getEmail())) {
-                log.warn("У пользователя {} указан email, использованный в другом профиле: {}", user.getLogin(), u.getLogin());
-                throw new RuntimeException("Данный email уже используется другим пользователем");
+                return true;
             }
         }
+        return false;
     }
 
 }

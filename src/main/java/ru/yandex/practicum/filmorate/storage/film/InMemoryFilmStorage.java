@@ -23,19 +23,17 @@ public class InMemoryFilmStorage implements FilmStorage {
     private UserStorage userStorage;
 
     @Override
-    public Film addNewFilm(Film film) {
+    public void addNewFilm(Film film) {
         film.setId(++id);
         films.put(film.getId(), film);
         log.info("Фильм {} успешно добавлен", film.getName());
-        return film;
     }
 
     @Override
-    public Film updateFilm(Film film) {
+    public void updateFilm(Film film) {
         if (films.containsKey(film.getId())) {
             films.put(film.getId(), film);
             log.info("Фильм с id {} успешно изменён", film.getId());
-            return film;
         }
         log.warn("Фильм с id {} не найден", film.getId());
         throw new NotFoundException("Фильм с данным id не найден");
@@ -56,24 +54,32 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public Film like(long id, long userId) {
+    public void like(long id, long userId) {
         Film film = getFilm(id);
         film.getUsersLiked().add(userId);
 
         log.info("Пользователь {} поставил лайк фильму {}",
                 userStorage.getUser(userId).getLogin(),
                 film.getName());
-        return film;
     }
 
     @Override
-    public Film dislike(long id, long userId) {
+    public boolean isFilmAlreadyLikedByUser(long id, long userId) {
+        return films.get(id).getUsersLiked().contains(userId);
+    }
+
+    @Override
+    public List<Long> usersLikedFilm(Long filmId) {
+        return films.get(filmId).getUsersLiked();
+    }
+
+    @Override
+    public void dislike(long id, long userId) {
         Film film = getFilm(id);
         film.getUsersLiked().remove(userStorage.getUser(userId));
         log.info("Пользователь {} успешно убрал лайк с фильма {}",
                 userStorage.getUser(userId).getLogin(),
                 film.getName());
-        return film;
     }
 
     @Override
@@ -86,5 +92,10 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     public boolean contains(long filmId) {
         return films.containsKey(filmId);
+    }
+
+    @Override
+    public long getNextId() {
+        return ++id;
     }
 }

@@ -9,6 +9,12 @@ import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.service.GenreService;
+import ru.yandex.practicum.filmorate.service.MpaService;
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.GenreDao;
+import ru.yandex.practicum.filmorate.storage.MpaDao;
 import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
@@ -23,13 +29,16 @@ import static org.junit.jupiter.api.Assertions.*;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class DbFilmsIntegrationTests {
     private final JdbcTemplate jdbcTemplate;
-    private UserDbStorage userStorage;
-    private FilmDbStorage filmStorage;
+    private UserService userService;
+    private FilmService filmService;
 
     @BeforeEach
     public void setUp() {
-        this.userStorage = new UserDbStorage(jdbcTemplate);
-        this.filmStorage = new FilmDbStorage(jdbcTemplate, userStorage);
+        this.userService = new UserService(new UserDbStorage(jdbcTemplate));
+        this.filmService = new FilmService(new FilmDbStorage(jdbcTemplate),
+                new UserService(new UserDbStorage(jdbcTemplate)),
+                new GenreService(new GenreDao(jdbcTemplate)),
+                new MpaService(new MpaDao(jdbcTemplate)));
 
         Film film1 = Film.builder()
                 .name("aaa")
@@ -37,7 +46,7 @@ public class DbFilmsIntegrationTests {
                 .releaseDate(LocalDate.of(2000, Month.AUGUST, 2))
                 .duration(120)
                 .build();
-        filmStorage.addNewFilm(film1);
+        filmService.addNewFilm(film1);
 
         Film film2 = Film.builder()
                 .name("aa")
@@ -45,7 +54,7 @@ public class DbFilmsIntegrationTests {
                 .releaseDate(LocalDate.of(2000, Month.AUGUST, 2))
                 .duration(120)
                 .build();
-        filmStorage.addNewFilm(film2);
+        filmService.addNewFilm(film2);
     }
 
     @Test
@@ -56,31 +65,31 @@ public class DbFilmsIntegrationTests {
                 .releaseDate(LocalDate.of(2000, Month.AUGUST, 2))
                 .duration(120)
                 .build();
-        filmStorage.addNewFilm(film);
+        filmService.addNewFilm(film);
 
-        assertEquals(filmStorage.getFilm(3), film,
+        assertEquals(filmService.getFilm(3), film,
                 "Фильм не был добавлен в БД");
     }
 
     @Test
     public void testUpdateFilm() {
-        Film film = filmStorage.getFilm(1);
+        Film film = filmService.getFilm(1);
         film.setName("TEST");
-        filmStorage.updateFilm(film);
-        assertEquals("TEST", filmStorage.getFilm(1).getName(),
+        filmService.updateFilm(film);
+        assertEquals("TEST", filmService.getFilm(1).getName(),
                 "Название фильма в базе данных не было изменено или изменено неадекватно запросу");
     }
 
     @Test
     public void testGetFilmById() {
-        Film film = filmStorage.getFilm(1);
+        Film film = filmService.getFilm(1);
         assertEquals("aaa", film.getName(),
                 "Метод вернул название фильма, не соответствующее фильму, переданному по id");
     }
 
     @Test
     public void testGetFilms() {
-        List<Film> films = filmStorage.getFilms();
+        List<Film> films = filmService.getFilms();
         assertEquals(2, films.size(),
                 "Размер таблицы в базе данных не соответствует реальному числу фильмов");
     }
@@ -88,17 +97,17 @@ public class DbFilmsIntegrationTests {
     @Test
     public void testLike() {
         createUsers();
-        filmStorage.like(1, 1);
-        assertTrue(filmStorage.getFilm(1).getUsersLiked().contains(1L),
+        filmService.like(1, 1);
+        assertTrue(filmService.getFilm(1).getUsersLiked().contains(1L),
                 "Лайк не был поставлен фильму");
     }
 
     @Test
     public void testDislike() {
         createUsers();
-        filmStorage.like(1, 1);
-        filmStorage.dislike(1, 1);
-        assertFalse(filmStorage.getFilm(1).getUsersLiked().contains(1L),
+        filmService.like(1, 1);
+        filmService.dislike(1, 1);
+        assertFalse(filmService.getFilm(1).getUsersLiked().contains(1L),
                 "Лайк не был снят");
     }
 
@@ -111,21 +120,21 @@ public class DbFilmsIntegrationTests {
                 .releaseDate(LocalDate.of(2000, Month.AUGUST, 2))
                 .duration(120)
                 .build();
-        filmStorage.addNewFilm(film);
+        filmService.addNewFilm(film);
 
-        filmStorage.like(1, 1);
-        filmStorage.like(1, 2);
-        filmStorage.like(1, 3);
-        filmStorage.like(1, 2);
-        filmStorage.like(3, 1);
-        filmStorage.like(3, 2);
-        filmStorage.like(2, 1);
+        filmService.like(1, 1);
+        filmService.like(1, 2);
+        filmService.like(1, 3);
+        filmService.like(1, 2);
+        filmService.like(3, 1);
+        filmService.like(3, 2);
+        filmService.like(2, 1);
 
-        assertEquals(2, filmStorage.topByLikes(2).size(),
+        assertEquals(2, filmService.topByLikes(2).size(),
                 "Ограничение на количество выводимых фильмов за раз не вернуло ожидаемый результат");
-        assertEquals(filmStorage.getFilm(1), filmStorage.topByLikes(3).getFirst(),
+        assertEquals(filmService.getFilm(1), filmService.topByLikes(3).getFirst(),
                 "Запрос к базе не смог определить самый популярный фильм");
-        assertEquals(filmStorage.getFilm(2), filmStorage.topByLikes(3).getLast(),
+        assertEquals(filmService.getFilm(2), filmService.topByLikes(3).getLast(),
                 "Запрос к базе не смог определить самый непопулярный фильм");
     }
 
@@ -136,7 +145,7 @@ public class DbFilmsIntegrationTests {
                 .email("hello@world.com")
                 .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
                 .build();
-        userStorage.createNewUser(user1);
+        userService.createNewUser(user1);
 
         User user2 = User.builder()
                 .login("ljiloo")
@@ -144,7 +153,7 @@ public class DbFilmsIntegrationTests {
                 .email("he@wo.com")
                 .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
                 .build();
-        userStorage.createNewUser(user2);
+        userService.createNewUser(user2);
 
         User user3 = User.builder()
                 .login("jijiloo")
@@ -152,6 +161,6 @@ public class DbFilmsIntegrationTests {
                 .email("hehe@wow.com")
                 .birthday(LocalDate.of(1909, Month.SEPTEMBER, 19))
                 .build();
-        userStorage.createNewUser(user3);
+        userService.createNewUser(user3);
     }
 }

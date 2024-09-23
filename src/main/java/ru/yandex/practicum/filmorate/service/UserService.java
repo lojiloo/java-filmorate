@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.InvalidRequestException;
@@ -14,18 +13,27 @@ import java.util.List;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor(onConstructor_ = @Autowired)
+@RequiredArgsConstructor
 public class UserService {
-    @Qualifier("DbUsers")
+    @Qualifier("dbUsers")
     private final UserStorage userStorage;
 
     public User createNewUser(User user) {
         if (user.getId() != null) {
             log.warn("Обнаружен id у незарегистрированного пользователя: {}", user.getEmail());
             throw new InvalidRequestException("id не может быть введен вручную");
+        } else {
+            user.setId(userStorage.getNextId());
+            checkName(user);
         }
 
-        return userStorage.createNewUser(user);
+        if (userStorage.isEmailTaken(user)) {
+            log.warn("У пользователя {} указан email, использованный в другом профиле", user.getLogin());
+            throw new RuntimeException("Данный email уже используется другим пользователем");
+        }
+        userStorage.createNewUser(user);
+
+        return user;
     }
 
     public User updateUser(User user) {
@@ -38,12 +46,18 @@ public class UserService {
             log.warn("Пользователя с id {} не существует", id);
             throw new NotFoundException("Пользователь с таким id не найден");
         }
+        userStorage.updateUser(user);
+        user.getFriends().addAll(userStorage.getUserFriendsIds(id));
 
-        return userStorage.updateUser(user);
+        return user;
     }
 
     public List<User> getUsers() {
-        return userStorage.getUsers();
+        List<User> users = userStorage.getUsers();
+        for (int i = 0; i < users.size(); i++) {
+            users.get(i).getFriends().addAll(userStorage.getUserFriendsIds(users.get(i).getId()));
+        }
+        return users;
     }
 
     public User getUser(long id) {
@@ -51,8 +65,10 @@ public class UserService {
             log.warn("Пользователь с id {} не найден", id);
             throw new NotFoundException("Пользователь с таким id не найден");
         }
+        User user = userStorage.getUser(id);
+        user.getFriends().addAll(userStorage.getUserFriendsIds(id));
 
-        return userStorage.getUser(id);
+        return user;
     }
 
     public User addNewFriend(long id, long friendId) {
@@ -65,7 +81,13 @@ public class UserService {
             throw new NotFoundException("Пользователь с таким id не найден");
         }
 
-        return userStorage.addNewFriend(id, friendId);
+        if (!userStorage.friendIsAdded(id, friendId)) {
+            userStorage.addNewFriend(id, friendId);
+        }
+        User user = getUser(id);
+        user.getFriends().addAll(userStorage.getUserFriendsIds(id));
+
+        return user;
     }
 
     public User deleteFromFriends(long id, long friendId) {
@@ -78,7 +100,11 @@ public class UserService {
             throw new NotFoundException("Пользователь с таким id не найден");
         }
 
-        return userStorage.deleteFromFriends(id, friendId);
+        User user = getUser(id);
+        userStorage.deleteFromFriends(id, friendId);
+        user.getFriends().remove(friendId);
+
+        return user;
     }
 
     public List<User> getUserFriends(long id) {
@@ -100,6 +126,20 @@ public class UserService {
             throw new NotFoundException("Недействительный id");
         }
 
-        return userStorage.getCommonFriends(id, otherId);
+        List<User> commonFriends = userStorage.getCommonFriends(id, otherId);
+        for (User friend : commonFriends) {
+            friend.getFriends().addAll(userStorage.getUserFriendsIds(friend.getId()));
+        }
+        return commonFriends;
+    }
+
+    public boolean contains(long id) {
+        return userStorage.contains(id);
+    }
+
+    private void checkName(User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
     }
 }

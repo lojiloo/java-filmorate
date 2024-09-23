@@ -36,10 +36,20 @@ public class MpaDao {
                 .build();
     }
 
-    private boolean contains(int id) {
+    public boolean contains(int id) {
         String query = "SELECT COUNT(*) FROM mpa WHERE mpa_id = ?;";
         Integer count = jdbcTemplate.queryForObject(query, Integer.class, id);
 
         return count > 0;
+    }
+
+    public void updateMpa(long filmId, int mpaId) {
+        String queryUpdate = "UPDATE films SET mpa = ? WHERE film_id = ? ;";
+        jdbcTemplate.update(queryUpdate, mpaId, filmId);
+    }
+
+    public void deleteMpa(long filmId) {
+        String queryDelete = "UPDATE films SET mpa = NULL WHERE film_id = ? ;";
+        jdbcTemplate.update(queryDelete, filmId);
     }
 }
