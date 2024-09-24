@@ -13,7 +13,7 @@ import java.util.List;
 
 @Repository
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-public class MpaDao {
+public class MpaStorage {
     private final JdbcTemplate jdbcTemplate;
 
     public List<Mpa> getMpa() {
@@ -46,10 +46,5 @@ public class MpaDao {
     public void updateMpa(long filmId, int mpaId) {
         String queryUpdate = "UPDATE films SET mpa = ? WHERE film_id = ? ;";
         jdbcTemplate.update(queryUpdate, mpaId, filmId);
-    }
-
-    public void deleteMpa(long filmId) {
-        String queryDelete = "UPDATE films SET mpa = NULL WHERE film_id = ? ;";
-        jdbcTemplate.update(queryDelete, filmId);
     }
 }

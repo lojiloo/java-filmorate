@@ -15,7 +15,7 @@ import java.util.Set;
 
 @Repository
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-public class GenreDao {
+public class GenreStorage {
     private final JdbcTemplate jdbcTemplate;
 
     public List<Genre> getGenres() {
@@ -68,10 +68,5 @@ public class GenreDao {
                     genre,
                     new Timestamp(System.currentTimeMillis()));
         }
-    }
-
-    public void deleteGenres(long filmId) {
-        String queryDeleteGenres = "DELETE FROM film_genres WHERE film_id = ?;";
-        jdbcTemplate.update(queryDeleteGenres, filmId);
     }
 }

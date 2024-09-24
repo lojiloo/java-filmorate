@@ -10,6 +10,7 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -22,18 +23,14 @@ public class UserService {
         if (user.getId() != null) {
             log.warn("Обнаружен id у незарегистрированного пользователя: {}", user.getEmail());
             throw new InvalidRequestException("id не может быть введен вручную");
-        } else {
-            user.setId(userStorage.getNextId());
-            checkName(user);
         }
-
         if (userStorage.isEmailTaken(user)) {
             log.warn("У пользователя {} указан email, использованный в другом профиле", user.getLogin());
             throw new RuntimeException("Данный email уже используется другим пользователем");
         }
-        userStorage.createNewUser(user);
 
-        return user;
+        checkName(user);
+        return userStorage.createNewUser(user);
     }
 
     public User updateUser(User user) {
@@ -54,9 +51,13 @@ public class UserService {
 
     public List<User> getUsers() {
         List<User> users = userStorage.getUsers();
+        Map<Long, List<Long>> usersFriendsIds = userStorage.getUsersFriendsIds();
         for (int i = 0; i < users.size(); i++) {
-            users.get(i).getFriends().addAll(userStorage.getUserFriendsIds(users.get(i).getId()));
+            if (usersFriendsIds.containsKey(users.get(i).getId())) {
+                users.get(i).getFriends().addAll(usersFriendsIds.get(users.get(i).getId()));
+            }
         }
+
         return users;
     }
 

@@ -3,10 +3,11 @@ package ru.yandex.practicum.filmorate.storage.user;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.List;
+import java.util.Map;
 
 public interface UserStorage {
 
-    void createNewUser(User user);
+    User createNewUser(User user);
 
     boolean isEmailTaken(User user);
 
@@ -21,6 +22,8 @@ public interface UserStorage {
     List<User> getUserFriends(long id);
 
     List<Long> getUserFriendsIds(long id);
+
+    Map<Long, List<Long>> getUsersFriendsIds();
 
     List<User> getCommonFriends(long id, long otherId);
 

@@ -23,10 +23,12 @@ public class InMemoryFilmStorage implements FilmStorage {
     private UserStorage userStorage;
 
     @Override
-    public void addNewFilm(Film film) {
-        film.setId(++id);
+    public Film addNewFilm(Film film) {
+        film.setId(getNextId());
         films.put(film.getId(), film);
         log.info("Фильм {} успешно добавлен", film.getName());
+
+        return film;
     }
 
     @Override

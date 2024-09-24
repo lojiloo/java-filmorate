@@ -8,9 +8,7 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Repository("dbUsers")
@@ -23,7 +21,8 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
-    public void createNewUser(User user) {
+    public User createNewUser(User user) {
+        user.setId(getNextId());
         String query = "INSERT INTO users (user_id, login, name, email, birthday) VALUES (?, ?, ?, ?, ?)";
         jdbcTemplate.update(query,
                 user.getId(),
@@ -31,6 +30,7 @@ public class UserDbStorage implements UserStorage {
                 user.getName(),
                 user.getEmail(),
                 user.getBirthday());
+        return user;
     }
 
     @Override
@@ -109,6 +109,22 @@ public class UserDbStorage implements UserStorage {
                 "JOIN friends AS f ON u.user_id = f.following_user_id " +
                 "WHERE f.following_user_id = ?);";
         return jdbcTemplate.queryForList(queryFindUserFriendsIds, Long.class, id);
+    }
+
+    @Override
+    public Map<Long, List<Long>> getUsersFriendsIds() {
+        String getAllFriendsQuery = "SELECT * FROM friends ;";
+
+        return jdbcTemplate.query(getAllFriendsQuery, (ResultSet rs) -> {
+            HashMap<Long,List<Long>> results = new HashMap<>();
+            while (rs.next()) {
+                if (!results.containsKey(rs.getLong("following_user_id"))) {
+                    results.put(rs.getLong("following_user_id"), new ArrayList<>());
+                }
+                results.get(rs.getLong("following_user_id")).add(rs.getLong("followed_user_id"));
+            }
+            return results;
+        });
     }
 
     @Override

@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface FilmStorage {
 
-    void addNewFilm(Film film);
+    Film addNewFilm(Film film);
 
     void updateFilm(Film film);
 

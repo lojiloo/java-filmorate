@@ -13,8 +13,8 @@ import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.service.GenreService;
 import ru.yandex.practicum.filmorate.service.MpaService;
 import ru.yandex.practicum.filmorate.service.UserService;
-import ru.yandex.practicum.filmorate.storage.GenreDao;
-import ru.yandex.practicum.filmorate.storage.MpaDao;
+import ru.yandex.practicum.filmorate.storage.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.MpaStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
@@ -37,8 +37,8 @@ public class DbFilmsIntegrationTests {
         this.userService = new UserService(new UserDbStorage(jdbcTemplate));
         this.filmService = new FilmService(new FilmDbStorage(jdbcTemplate),
                 new UserService(new UserDbStorage(jdbcTemplate)),
-                new GenreService(new GenreDao(jdbcTemplate)),
-                new MpaService(new MpaDao(jdbcTemplate)));
+                new GenreService(new GenreStorage(jdbcTemplate)),
+                new MpaService(new MpaStorage(jdbcTemplate)));
 
         Film film1 = Film.builder()
                 .name("aaa")

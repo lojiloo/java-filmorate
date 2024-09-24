@@ -3,32 +3,28 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Mpa;
-import ru.yandex.practicum.filmorate.storage.MpaDao;
+import ru.yandex.practicum.filmorate.storage.MpaStorage;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class MpaService {
-    private final MpaDao mpaDao;
+    private final MpaStorage mpaStorage;
 
     public List<Mpa> getMpa() {
-        return mpaDao.getMpa();
+        return mpaStorage.getMpa();
     }
 
     public Mpa getMpaById(int id) {
-        return mpaDao.getMpaById(id);
+        return mpaStorage.getMpaById(id);
     }
 
-    protected boolean contains(int id) {
-        return mpaDao.contains(id);
+    protected boolean exists(int id) {
+        return mpaStorage.contains(id);
     }
 
     protected void updateMpa(long filmId, int mpaId) {
-        mpaDao.updateMpa(filmId, mpaId);
-    }
-
-    protected void deleteMpa(long filmId) {
-        mpaDao.deleteMpa(filmId);
+        mpaStorage.updateMpa(filmId, mpaId);
     }
 }

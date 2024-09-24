@@ -10,9 +10,9 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,17 +29,12 @@ public class FilmService {
             log.warn("У фильма, не добавленного в сервис, обнаружен id: {}", film.getName());
             throw new InvalidRequestException("id не может быть введен вручную");
         } else {
-            film.setId(filmStorage.getNextId());
-            filmStorage.addNewFilm(film);
+            film = filmStorage.addNewFilm(film);
         }
 
-        if (film.getGenres().size() > 0) {
-            updateGenres(film);
-        }
+        updateGenres(film);
+        setMpa(film);
 
-        if (film.getMpa() != null) {
-            updateMpa(film);
-        }
         return film;
     }
 
@@ -50,28 +45,19 @@ public class FilmService {
             throw new NotFoundException("Фильм с таким id не существует");
         }
 
-        if (film.getGenres().size() > 0) {
-            updateGenres(film);
-        } else {
-            deleteGenres(film);
-        }
-
-        if (film.getMpa() != null) {
-            updateMpa(film);
-        } else {
-            deleteMpa(film);
-        }
-
+        updateGenres(film);
+        setMpa(film);
         filmStorage.updateFilm(film);
+
         return film;
     }
 
     public List<Film> getFilms() {
         List<Film> films = filmStorage.getFilms();
         for (Film film : films) {
-            getFilmGenres(film);
-            updateMpa(film);
-            updateLikes(film);
+            setGenres(film);
+            setMpa(film);
+            setLikes(film);
         }
 
         return films;
@@ -82,9 +68,9 @@ public class FilmService {
             throw new NotFoundException("Фильм с таким id не найден");
         }
         Film film = filmStorage.getFilm(id);
-        getFilmGenres(film);
-        updateMpa(film);
-        updateLikes(film);
+        setGenres(film);
+        setMpa(film);
+        setLikes(film);
 
         return film;
     }
@@ -99,7 +85,7 @@ public class FilmService {
             throw new NotFoundException("Недействительный id");
         }
 
-        Film film = filmStorage.getFilm(id);
+        Film film = getFilm(id);
         if (!filmStorage.isFilmAlreadyLikedByUser(id, userId)) {
             film.getUsersLiked().add(userId);
             filmStorage.like(id, userId);
@@ -134,27 +120,24 @@ public class FilmService {
         return top;
     }
 
-    private void getFilmGenres(Film film) {
-        List<Genre> genres = genreService.getFilmGenres(film.getId());
-        film.getGenres().addAll(genres);
-    }
-
     private void updateGenres(Film film) {
         List<Genre> genres = film.getGenres();
-        Set<Integer> ids = new HashSet<>();
-        for (Genre genre : genres) {
-            ids.add(genre.getId());
-        }
-        if (!genreService.containsAll(ids)) {
+        Set<Integer> ids = genres.stream().map(Genre::getId).collect(Collectors.toSet());
+        if (!genreService.existAll(ids)) {
             throw new InvalidRequestException("Данному id не соответствует ни одно наименование жанра");
         }
         genreService.updateGenres(film.getId(), ids);
     }
 
-    private void updateMpa(Film film) {
+    private void setGenres(Film film) {
+        List<Genre> genres = genreService.getFilmGenres(film.getId());
+        film.getGenres().addAll(genres);
+    }
+
+    private void setMpa(Film film) {
         if (film.getMpa() != null) {
             int mpaId = film.getMpa().getId();
-            if (!mpaService.contains(mpaId)) {
+            if (!mpaService.exists(mpaId)) {
                 throw new InvalidRequestException("Данному id не соответствует ни одно наименование рейтинга MPA");
             }
             film.setMpa(mpaService.getMpaById(mpaId));
@@ -162,15 +145,7 @@ public class FilmService {
         }
     }
 
-    private void deleteMpa(Film film) {
-        mpaService.deleteMpa(film.getId());
-    }
-
-    private void deleteGenres(Film film) {
-        genreService.deleteGenres(film.getId());
-    }
-
-    private void updateLikes(Film film) {
+    private void setLikes(Film film) {
         film.getUsersLiked().addAll(filmStorage.usersLikedFilm(film.getId()));
     }
 }

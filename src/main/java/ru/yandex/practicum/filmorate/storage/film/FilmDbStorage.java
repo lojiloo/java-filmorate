@@ -20,7 +20,8 @@ public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public void addNewFilm(Film film) {
+    public Film addNewFilm(Film film) {
+        film.setId(getNextId());
         String queryFilms = "INSERT INTO films (film_id, name, description, releaseDate, duration) " +
                 "VALUES (?, ?, ?, ?, ?)";
         jdbcTemplate.update(queryFilms,
@@ -29,20 +30,33 @@ public class FilmDbStorage implements FilmStorage {
                 film.getDescription(),
                 film.getReleaseDate(),
                 film.getDuration());
+        return film;
     }
 
     @Override
     public void updateFilm(Film film) {
-        long id = film.getId();
-        String queryFilms = "UPDATE films SET film_id = ?, name = ?, description = ?, releaseDate = ?, duration = ? WHERE films.film_id = ?";
+        long filmId = film.getId();
 
-        jdbcTemplate.update(queryFilms,
-                film.getId(),
-                film.getName(),
-                film.getDescription(),
-                film.getReleaseDate(),
-                film.getDuration(),
-                id);
+        if (film.getMpa() != null) {
+            String queryFilms = "UPDATE films SET film_id = ?, name = ?, description = ?, releaseDate = ?, duration = ?, mpa = ? WHERE film_id = ?";
+            jdbcTemplate.update(queryFilms,
+                    filmId,
+                    film.getName(),
+                    film.getDescription(),
+                    film.getReleaseDate(),
+                    film.getDuration(),
+                    film.getMpa().getId(),
+                    filmId);
+        } else {
+            String queryFilms = "UPDATE films SET film_id = ?, name = ?, description = ?, releaseDate = ?, duration = ?, mpa = NULL WHERE film_id = ?";
+            jdbcTemplate.update(queryFilms,
+                    filmId,
+                    film.getName(),
+                    film.getDescription(),
+                    film.getReleaseDate(),
+                    film.getDuration(),
+                    filmId);
+        }
     }
 
     @Override
@@ -71,16 +85,14 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> topByLikes(int count) {
-        String query = "SELECT film_id FROM likes " +
-                "GROUP BY film_id " +
-                "ORDER BY COUNT(user_id) DESC " +
-                "LIMIT ?;";
-        List<Long> filmsIdByLike = jdbcTemplate.queryForList(query, Long.class, count);
+        String query = "SELECT f.film_id, f.name, f.description, f.releaseDate, f.duration, f.mpa, COUNT(user_id) AS count " +
+                "FROM films AS f JOIN likes AS l ON f.film_id = l.film_id " +
+                "WHERE l.film_id IN " +
+                "(SELECT film_id FROM likes GROUP BY film_id LIMIT ?) " +
+                "GROUP BY f.film_id " +
+                "ORDER BY count DESC;";
+        List<Film> topFilms = jdbcTemplate.query(query, this::mapRowToFilm, count);
 
-        List<Film> topFilms = new ArrayList<>();
-        for (Long id : filmsIdByLike) {
-            topFilms.add(getFilm(id));
-        }
         return topFilms;
     }
 

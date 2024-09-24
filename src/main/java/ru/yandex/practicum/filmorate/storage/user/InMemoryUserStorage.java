@@ -14,9 +14,12 @@ public class InMemoryUserStorage implements UserStorage {
     private long id = 0;
 
     @Override
-    public void createNewUser(User user) {
+    public User createNewUser(User user) {
+        user.setId(getNextId());
         users.put(user.getId(), user);
         log.info("Пользователь с email {} успешно добавлен", user.getEmail());
+
+        return user;
     }
 
     @Override
@@ -69,6 +72,15 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public List<Long> getUserFriendsIds(long id) {
         return new ArrayList<>(getUser(id).getFriends());
+    }
+
+    @Override
+    public Map<Long, List<Long>> getUsersFriendsIds() {
+        Map<Long, List<Long>> usersFriendsIds = new HashMap<>();
+        for (User user : users.values()) {
+            usersFriendsIds.put(user.getId(), new ArrayList<>(user.getFriends()));
+        }
+        return usersFriendsIds;
     }
 
     @Override
