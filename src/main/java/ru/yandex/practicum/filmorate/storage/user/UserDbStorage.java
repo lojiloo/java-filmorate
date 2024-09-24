@@ -116,7 +116,7 @@ public class UserDbStorage implements UserStorage {
         String getAllFriendsQuery = "SELECT * FROM friends ;";
 
         return jdbcTemplate.query(getAllFriendsQuery, (ResultSet rs) -> {
-            HashMap<Long,List<Long>> results = new HashMap<>();
+            HashMap<Long, List<Long>> results = new HashMap<>();
             while (rs.next()) {
                 if (!results.containsKey(rs.getLong("following_user_id"))) {
                     results.put(rs.getLong("following_user_id"), new ArrayList<>());
