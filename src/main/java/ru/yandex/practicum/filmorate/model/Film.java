@@ -8,13 +8,14 @@ import lombok.Data;
 import ru.yandex.practicum.filmorate.validation.DateValidation;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Builder(toBuilder = true)
 public class Film {
-    private final Set<User> usersLiked = new HashSet<>();
+    private final List<Long> usersLiked = new ArrayList<>();
+    private final List<Genre> genres = new ArrayList<>();
     private Long id;
     @NotBlank
     private String name;
@@ -24,4 +25,5 @@ public class Film {
     private LocalDate releaseDate;
     @Positive
     private int duration;
+    private Mpa mpa;
 }
