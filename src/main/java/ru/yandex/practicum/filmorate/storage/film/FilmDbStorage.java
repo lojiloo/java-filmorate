@@ -10,8 +10,7 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Repository("dbFilms")
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
@@ -112,9 +111,27 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
+    public Map<Long, List<Long>> usersLikedFilms(List<Long> filmIds) {
+        String inSql = String.join(",", Collections.nCopies(filmIds.size(), "?"));
+        String queryGetAllLikes = String.format("SELECT user_id, film_id FROM likes WHERE film_id IN (%s);", inSql);
+
+        return jdbcTemplate.query(queryGetAllLikes, (ResultSet rs) -> {
+            HashMap<Long, List<Long>> results = new HashMap<>();
+            while (rs.next()) {
+                if (!results.containsKey(rs.getLong("film_id"))) {
+                    results.put(rs.getLong("film_id"), new ArrayList<>());
+                }
+                results.get(rs.getLong("film_id")).add(rs.getLong("user_id"));
+            }
+            return results;
+        }, filmIds.toArray());
+    }
+
+    @Override
     public List<Long> usersLikedFilm(Long filmId) {
-        String queryLikes = "SELECT user_id FROM likes WHERE film_id = ?;";
-        return jdbcTemplate.queryForList(queryLikes, Long.class, filmId);
+        String queryGetLikes = "SELECT user_id FROM likes WHERE film_id = ?;";
+        return jdbcTemplate.queryForList(queryGetLikes, Long.class, filmId);
+
     }
 
     private Film mapRowToFilm(ResultSet resultSet, int rowNum) throws SQLException {
@@ -132,8 +149,7 @@ public class FilmDbStorage implements FilmStorage {
         return film;
     }
 
-    @Override
-    public long getNextId() {
+    private long getNextId() {
         String query = "SELECT max(film_id) FROM films ;";
         Optional<Long> currentId = Optional.ofNullable(jdbcTemplate.queryForObject(query, Long.class));
 

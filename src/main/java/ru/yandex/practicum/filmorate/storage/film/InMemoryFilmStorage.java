@@ -8,10 +8,7 @@ import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component("InMemoryFilms")
 @RequiredArgsConstructor
@@ -71,6 +68,19 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
+    public Map<Long, List<Long>> usersLikedFilms(List<Long> filmIds) {
+        Map<Long, List<Long>> likesPerFilms = new HashMap<>();
+
+        for (Film film : films.values()) {
+            if (!likesPerFilms.containsKey(film.getId())) {
+                likesPerFilms.put(film.getId(), new ArrayList<>());
+            }
+            likesPerFilms.get(film.getId()).addAll(film.getUsersLiked());
+        }
+        return likesPerFilms;
+    }
+
+    @Override
     public List<Long> usersLikedFilm(Long filmId) {
         return films.get(filmId).getUsersLiked();
     }
@@ -96,8 +106,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         return films.containsKey(filmId);
     }
 
-    @Override
-    public long getNextId() {
+    private long getNextId() {
         return ++id;
     }
 }

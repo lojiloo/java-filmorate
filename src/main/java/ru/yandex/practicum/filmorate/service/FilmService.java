@@ -10,7 +10,9 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -114,8 +116,16 @@ public class FilmService {
     public List<Film> topByLikes(int count) {
         List<Film> top = filmStorage.topByLikes(count);
 
+        List<Long> ids = new ArrayList<>();
         for (Film film : top) {
-            film.getUsersLiked().addAll(filmStorage.usersLikedFilm(film.getId()));
+            ids.add(film.getId());
+        }
+
+        Map<Long, List<Long>> likesPerFilms = filmStorage.usersLikedFilms(ids);
+        for (int i = 0; i < top.size(); i++) {
+            if (likesPerFilms.containsKey(top.get(i).getId())) {
+                top.get(i).getUsersLiked().addAll(likesPerFilms.get(top.get(i).getId()));
+            }
         }
         return top;
     }

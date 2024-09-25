@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.storage.film;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.List;
+import java.util.Map;
 
 public interface FilmStorage {
 
@@ -18,6 +19,8 @@ public interface FilmStorage {
 
     boolean isFilmAlreadyLikedByUser(long id, long userId);
 
+    Map<Long, List<Long>> usersLikedFilms(List<Long> filmsIds);
+
     List<Long> usersLikedFilm(Long filmId);
 
     void dislike(long id, long userId);
@@ -25,6 +28,4 @@ public interface FilmStorage {
     List<Film> topByLikes(int count);
 
     boolean contains(long id);
-
-    long getNextId();
 }
